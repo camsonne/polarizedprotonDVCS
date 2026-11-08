@@ -156,6 +156,66 @@ axial cones at ~90° beam left and beam right, not through the forward split reg
 the tracker sits. Photons and neutrons are not swept. The neutron dose on the SiPMs
 (dark-count increase) needs to be estimated.
 
+## 6b. Variant C: fibres inside the magnet, read out above it
+
+The fibre barrel sits in the split gap of the magnet, in the target vacuum. It lies
+between the 4 K shield (r = 3.8 cm) and the coil faces (|x| > 6 cm). There are two
+stations at r = 4.3 and 5.1 cm. Each has X fibres (vertical) and U/V fibres (±20°
+stereo) of 0.5 mm diameter. Coverage is ±75° horizontally and −67° to +70° vertically,
+with a ±14° × ±1 cm hole for the rastered beam. All fibres run roughly vertically, so
+they can leave the gap upwards along the target insert. Clear-fibre light guides then
+take the light to SiPMs outside the field. The channel count is 4 k, and the material in
+front of the NPS and HMS is 1.3% X₀.
+
+The proton is measured **before** it reaches the coils, so the coil shadow disappears.
+At r ≈ 5 cm the bending is negligible, so the barrel measures the direction near the
+vertex. The beam-spot vertex is not precise enough here: a 5 mm z uncertainty is
+~0.1 rad at 5 cm. Exclusivity therefore uses the **direction** residual between the two
+stations, which does not depend on a common shift of the track. The resolution is
+13–30 mrad, dominated by target multiple scattering, against ~300 mrad of Fermi smearing.
+
+| | A5 (outer) KinA | C5 (inner) KinA | A5 KinD | C5 KinD |
+|---|---|---|---|---|
+| recoil reaches the tracker | 0.52 | **0.85** | 0.74 | 0.75 |
+| free-p efficiency of the recoil cut | 0.49 | **0.80** | 0.70 | 0.70 |
+| ¹⁴N bound-p survival | **0.6%** | 3.0% | **0.8%** | 2.5% |
+| dilution f with recoil | **0.97** | 0.92 | **0.97** | 0.92 |
+| FOM relative to M_X² only | 1.9 | **2.9** | **2.6** | 2.4 |
+| channels | 18 k | **4 k** | 18 k | 4 k |
+
+The "hit magnet" column of RESULTS.md is not meaningful for C5: the proton is measured
+before it reaches the coils.
+
+Tracking efficiency vs Trento φ (45° bins starting at φ = 0):
+
+```
+A5 KinA  0.04 0.34 0.64 0.77 0.74 0.91 0.67 0.04
+C5 KinA  0.99 0.99 0.95 0.72 0.57 0.86 0.97 0.98
+A5 KinD  0.09 0.69 1.00 0.99 0.90 0.91 0.72 0.07
+C5 KinD  0.99 0.96 0.86 0.52 0.36 0.73 0.94 0.99
+```
+
+**The two are complementary.** The inner barrel is fully efficient near φ = 0, where the
+coils block the outer tracker and where BH peaks. It loses efficiency near φ = 180°,
+where the recoil goes close to the beam hole. The outer tracker does the opposite. An
+**inner barrel + outer stations hybrid** would give nearly uniform φ acceptance. The inner
+barrel would provide the vertex-near direction and acceptance; the outer stations would
+provide the time of flight, the momentum and the best rejection. A combined matching for
+the hybrid still has to be written.
+
+Practical issues for the inner barrel:
+* **Cryogenic vacuum.** It sits next to the 4 K shield, so the heat load on the
+  refrigerator, the fibre behaviour at low temperature (brittleness, light yield) and
+  outgassing all need checking.
+* **Rates and radiation dose at 5 cm are ~100× those at 50 cm.** Low-energy charged
+  particles spiral along the field lines (±x), i.e. through the barrel at α ≈ ±90°.
+  Coverage is therefore limited to ±75°, but the photon flux remains. Fibre radiation
+  damage over a run must be estimated with the Geant4 background.
+* **Raster and beam hole.** A smaller raster or a smaller beam hole directly recovers
+  efficiency near φ = 180°.
+* **Momentum.** With no time-of-flight lever arm, dE/dx in the 12 fibre layers
+  (truncated mean) could give β for slow protons; this has not been simulated yet.
+
 ## 7. Open issues and next steps
 
 1. **Real openings:** use the magnet cryostat, heat-shield and chamber-window drawings.

@@ -46,7 +46,8 @@ class Scenario:
     nps_cols: int = 30
     nps_rows: int = 36
     nps_block: float = 0.0205
-    min_stations: int = 2          # stations with both X and Y clusters required
+    min_stations: int = 2          # stations with a space point (>= 2 views) required
+    fit: bool = True               # run the stand-alone fit (needs X and Y views)
 
 
 _FIELD_CACHE = {}
@@ -153,10 +154,10 @@ def simulate(s: Setting, scn: Scenario, n, rng, nucleus=None, fitter=None, do_fi
     nst = len(scn.detector.stations)
     st_ok = np.zeros((len(sel), nst), bool)
     for si in range(nst):
-        jx = [j for j, (s_, v_, _) in enumerate(views) if s_ == si and v_ == "X"]
-        jy = [j for j, (s_, v_, _) in enumerate(views) if s_ == si and v_ == "Y"]
-        st_ok[:, si] = np.isfinite(meas[:, jx[0]]) & np.isfinite(meas[:, jy[0]])
-    # require the first and the last station for the lever arm + min_stations
+        js = [j for j, (s_, v_, _) in enumerate(views) if s_ == si]
+        fired = np.isfinite(meas[:, js])
+        # a station gives a space point with >= 2 fired views (X/Y, or X/U/V stereo)
+        st_ok[:, si] = fired.sum(axis=1) >= 2
     trk = (st_ok.sum(axis=1) >= scn.min_stations) & st_ok[:, 0] & st_ok[:, -1]
     out["tracked"] = trk
     # measured electron arm
@@ -183,7 +184,7 @@ def simulate(s: Setting, scn: Scenario, n, rng, nucleus=None, fitter=None, do_fi
                                    - np.nanmean(rp.det_time, axis=1))
     out["fit_ok"] = np.zeros(len(sel), bool)
     out["rec_fit"] = np.full((len(sel), 4), np.nan)
-    if do_fit and np.any(trk):
+    if do_fit and scn.fit and np.any(trk):
         fitter = fitter or make_fitter(tr, scn, rng)
         it = np.where(trk)[0]
         wm = meas[it]

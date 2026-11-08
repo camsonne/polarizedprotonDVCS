@@ -45,7 +45,7 @@ def run_task(task):
     rng = np.random.default_rng(seed)
     built = build(scn)
     t0 = time.time()
-    fitter = make_fitter(built[3], scn, rng)
+    fitter = make_fitter(built[3], scn, rng) if scn.fit else None
     msgs = [f"[{scn_name}] seed table {time.time() - t0:.0f}s"]
     for set_name, nuc in runs:
         s = next(x for x in SETTINGS if x.name == set_name)

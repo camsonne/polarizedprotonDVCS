@@ -54,8 +54,30 @@ def A5_tall():
     return Scenario(name="A5_tall", detector=det)
 
 
+def C5():
+    """Inner barrel inside the magnet split gap, in the target vacuum between the 4 K shield
+    (r = 3.8 cm) and the coil faces (|x| > 6 cm): two stations at r = 4.3 and 5.1 cm,
+    each X (vertical) + U/V (+-20 deg stereo) of 0.5 mm fibres.  All fibres run
+    roughly vertically, so they can be read out above the magnet."""
+    det = SciFiConfig(name="C inner barrel",
+                      stations=[StationConfig(0.043, views=("X", "U", "V"), view_gap=0.0015),
+                                StationConfig(0.051, views=("X", "U", "V"), view_gap=0.0015)],
+                      fibre_d=0.0005, stereo=20 * DEG, alpha_range=(-75 * DEG, 75 * DEG),
+                      y_range=(-0.10, 0.12), beam_hole=14 * DEG,
+                      support_cfrp=0.0002, support_foam=0.0)
+    return Scenario(name="C5", detector=det, fit=False)
+
+
+def C5_z1():
+    """C5 with a 1 mm vertex-z resolution from the electron arm (instead of 5 mm)."""
+    scn = C5()
+    scn.name = "C5_z1"
+    scn.arms.z_vertex = 0.001
+    return scn
+
+
 SCENARIOS = {f.__name__: f for f in [A5, A5_2st, A5_d2, A25, B5, A5_m0, A5_m10, A5_vert,
-                                     A5_tall]}
+                                     A5_tall, C5, C5_z1]}
 
 DESCRIPTIONS = {
     "A5": "baseline: 3 stations at R=52/57/62 cm outside the chamber, 1 mm fibres, 5 T",
@@ -67,6 +89,8 @@ DESCRIPTIONS = {
     "A5_m10": "magnet body = windings + 10 mm (pessimistic)",
     "A5_vert": "field axis vertical (different magnet)",
     "A5_tall": "taller tracker: y from -60 to +100 cm at R=52 cm",
+    "C5": "inner barrel in the magnet gap, r=4.3/5.1 cm, 0.5 mm fibres X/U/V, read out above the magnet",
+    "C5_z1": "C5 with 1 mm vertex-z resolution",
 }
 
 ALL_SETTINGS = ["KinA", "KinB", "KinC", "KinD", "KinE"]

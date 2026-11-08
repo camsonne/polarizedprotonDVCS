@@ -358,7 +358,8 @@ def scenario_metrics(scn, s_name, cals):
         return None
     cfg = SCENARIOS[scn]().detector
     o = os_["free"]
-    cal = A.MatchCalibration(o, cfg)
+    # inner trackers (< 20 cm) match the direction; outer trackers match the position
+    cal = A.MatchCalibration(o, cfg, mode="slope" if cfg.stations[0].radius < 0.2 else "position")
     cals[(scn, s_name)] = cal
     m = {"scenario": scn, "setting": s_name, "n_arms": int(o["n_arms"])}
     m.update({"frac_" + k: v for k, v in A.breakdown(o, A.weights(o)).items()})
@@ -366,6 +367,7 @@ def scenario_metrics(scn, s_name, cals):
     m.update({"res_" + k: v for k, v in tot.items()})
     for name in ("ds", "dy", "dt"):
         m[f"match_sigma_{name}_p0.5"] = float(cal.sigma(name, 0.5))
+    m["match_mode"] = cal.mode
     if all(v is not None for v in os_.values()):
         e = {}
         for n, oo in os_.items():

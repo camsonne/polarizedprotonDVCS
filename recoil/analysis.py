@@ -52,11 +52,59 @@ def view_groups(cfg):
 
 
 def match_variables(o, cfg):
-    X, Y = view_groups(cfg)
+    """Mean horizontal (arc) and vertical residuals over the views.  Stereo U/V pairs of a
+    station are converted: s = (u + v) / (2 cos b), y = (v - u) / (2 sin b)."""
+    views = cfg.view_list()
+    r = o["match_res"]
+    cs, sn = np.cos(cfg.stereo), np.sin(cfg.stereo)
+    S, Yv = [], []
+    for j, (st, v, _) in enumerate(views):
+        if v == "X":
+            S.append(r[:, j])
+        elif v == "Y":
+            Yv.append(r[:, j])
+    for st in sorted({st for st, _, _ in views}):
+        ju = [j for j, (s_, v, _) in enumerate(views) if s_ == st and v == "U"]
+        jv = [j for j, (s_, v, _) in enumerate(views) if s_ == st and v == "V"]
+        if ju and jv:
+            u, v = r[:, ju[0]], r[:, jv[0]]
+            Yv.append((v - u) / (2 * sn))
+            if not any(v_ == "X" for s_, v_, _ in views if s_ == st):
+                S.append((u + v) / (2 * cs))
     with np.errstate(all="ignore"):
-        ds = np.nanmean(o["match_res"][:, X], axis=1)
-        dy = np.nanmean(o["match_res"][:, Y], axis=1)
+        ds = np.nanmean(np.column_stack(S), axis=1)
+        dy = np.nanmean(np.column_stack(Yv), axis=1)
     return ds, dy, o["match_dt"]
+
+
+def station_residuals(o, cfg):
+    """Per-station (s, y) residuals [m] -> arrays (N, n_station)."""
+    views = cfg.view_list()
+    r = o["match_res"]
+    cs, sn = np.cos(cfg.stereo), np.sin(cfg.stereo)
+    sts = sorted({st for st, _, _ in views})
+    S = np.full((len(r), len(sts)), np.nan)
+    Y = np.full((len(r), len(sts)), np.nan)
+    for k, st in enumerate(sts):
+        j = {v: i for i, (s_, v, _) in enumerate(views) if s_ == st}
+        if "U" in j and "V" in j:
+            u, v = r[:, j["U"]], r[:, j["V"]]
+            Y[:, k] = (v - u) / (2 * sn)
+            S[:, k] = (u + v) / (2 * cs)
+        if "X" in j:
+            S[:, k] = r[:, j["X"]]
+        if "Y" in j:
+            Y[:, k] = r[:, j["Y"]]
+    R = np.array([cfg.stations[k].radius for k in range(len(sts))])
+    return S, Y, R
+
+
+def slope_variables(o, cfg):
+    """Direction residuals [rad] between the first and last station: independent of a
+    common shift of the track (e.g. from the vertex-z uncertainty)."""
+    S, Y, R = station_residuals(o, cfg)
+    dR = R[-1] - R[0]
+    return (S[:, -1] - S[:, 0]) / dR, (Y[:, -1] - Y[:, 0]) / dR, o["match_dt"]
 
 
 def p_pred(o):
@@ -66,8 +114,10 @@ def p_pred(o):
 class MatchCalibration:
     """sigma(p) = sqrt(a^2 + (b/(p beta))^2) for ds, dy, dt from the free-proton sample."""
 
-    def __init__(self, o, cfg, bins=np.array([0.2, 0.35, 0.45, 0.55, 0.7, 0.9, 1.2, 2.0])):
-        ds, dy, dt = match_variables(o, cfg)
+    def __init__(self, o, cfg, bins=np.array([0.2, 0.35, 0.45, 0.55, 0.7, 0.9, 1.2, 2.0]),
+                 mode="position"):
+        self.mode = mode
+        ds, dy, dt = self.variables(o, cfg)
         pp = p_pred(o)
         ok = o["tracked"] & np.isfinite(ds) & np.isfinite(dy)
         self.pars = {}
@@ -95,8 +145,11 @@ class MatchCalibration:
         beta = p / np.sqrt(p**2 + M_P**2)
         return np.sqrt(a**2 + (b / (p * beta)) ** 2)
 
+    def variables(self, o, cfg):
+        return slope_variables(o, cfg) if self.mode == "slope" else match_variables(o, cfg)
+
     def pulls(self, o, cfg):
-        ds, dy, dt = match_variables(o, cfg)
+        ds, dy, dt = self.variables(o, cfg)
         pp = np.clip(p_pred(o), 0.2, 3.0)
         return ds / self.sigma("ds", pp), dy / self.sigma("dy", pp), dt / self.sigma("dt", pp)
 
